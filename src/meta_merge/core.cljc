@@ -102,3 +102,33 @@
          :else right))
   ([left right & more]
    (reduce meta-merge left (cons right more))))
+
+
+
+
+(defn meta-merge-replace
+  "Recursively merge values based on the information in their metadata."
+  ([] {})
+  ([left] left)
+  ([left right]
+   (cond (different-priority? left right)
+         (pick-prioritized left right)
+
+         (and (map? left) (map? right))
+         (merge-with meta-merge-replace left right)
+
+         (and (set? left) (set? right))
+         right
+
+         (and (coll? left) (coll? right))
+         (if (or (-> left meta :prepend)
+                 (-> right meta :prepend))
+           (-> (into (empty left) (concat right left))
+             (with-meta (merge (meta left)
+                               (select-keys (meta right) [:displace]))))
+           ;; replace
+           right)
+
+         :else right))
+  ([left right & more]
+   (reduce meta-merge-replace left (cons right more))))
